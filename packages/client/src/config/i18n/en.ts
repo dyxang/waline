@@ -1,4 +1,4 @@
-import { generateLocale } from './generate';
+import { generateLocale } from './generate.js';
 
 export default generateLocale([
   'NickName',
@@ -41,4 +41,13 @@ export default generateLocale([
   'Maiar',
   'GIF',
   'Search GIF',
+  'Profile',
+  'Approved',
+  'Waiting',
+  'Spam',
+  'Unsticky',
+  'Oldest',
+  'Latest',
+  'Hottest',
+  'What do you think?',
 ]);

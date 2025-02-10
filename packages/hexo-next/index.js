@@ -3,11 +3,12 @@
 'use strict';
 
 const Util = require('@next-theme/utils');
+
 const utils = new Util(hexo, __dirname);
 
 const warn = (...args) => {
   hexo.log.warn(
-    `Since ${args[0]} is turned on, the ${args[1]} is disabled to avoid potential hazards.`
+    `Since ${args[0]} is turned on, the ${args[1]} is disabled to avoid potential hazards.`,
   );
 };
 
@@ -29,13 +30,14 @@ const iconText = (icon, key, defaultValue = capitalize(key)) =>
 // Add comment
 hexo.extend.filter.register('theme_inject', (injects) => {
   const config = utils.defaultConfigFile('waline', 'default.yaml');
+
   if (!config.enable || !config.serverURL) return;
 
   injects.comment.raw(
     'waline',
     '<div class="comments" id="waline"></div>',
     {},
-    { cache: true }
+    { cache: true },
   );
 
   injects.bodyEnd.raw('waline', utils.getFileContent('waline.njk'));
@@ -44,13 +46,14 @@ hexo.extend.filter.register('theme_inject', (injects) => {
     'waline',
     `<link rel="dns-prefetch" href="${config.serverURL}">`,
     {},
-    {}
+    {},
   );
 });
 
 // Add post_meta
 hexo.extend.filter.register('theme_inject', (injects) => {
   const config = utils.defaultConfigFile('waline', 'default.yaml');
+
   if (!config.enable || !config.serverURL) return;
 
   injects.postMeta.raw(
@@ -66,15 +69,12 @@ hexo.extend.filter.register('theme_inject', (injects) => {
   {% endif %}
   `,
     {},
-    {}
+    {},
   );
 
   if (config.pageview) {
     // ensure to turn of valine visitor
-    if (
-      hexo.theme.config.leancloud_visitors &&
-      hexo.theme.config.leancloud_visitors.enable
-    ) {
+    if (hexo.theme.config.leancloud_visitors?.enable) {
       warn('waline.pageview', 'leancloud_visitors');
       hexo.theme.config.leancloud_visitors.enable = false;
 
@@ -93,7 +93,7 @@ hexo.extend.filter.register('theme_inject', (injects) => {
     </span>
   `,
       {},
-      {}
+      {},
     );
   }
 });

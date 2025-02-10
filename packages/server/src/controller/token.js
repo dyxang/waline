@@ -1,16 +1,13 @@
-const speakeasy = require('speakeasy');
 const jwt = require('jsonwebtoken');
+const speakeasy = require('speakeasy');
 const helper = require('think-helper');
-const { PasswordHash } = require('phpass');
-const BaseRest = require('./rest');
+
+const BaseRest = require('./rest.js');
 
 module.exports = class extends BaseRest {
   constructor(...args) {
     super(...args);
-    this.modelInstance = this.service(
-      `storage/${this.config('storage')}`,
-      'Users'
-    );
+    this.modelInstance = this.getModel('Users');
   }
 
   getAction() {
@@ -25,16 +22,14 @@ module.exports = class extends BaseRest {
       return this.fail();
     }
 
-    const checkPassword = new PasswordHash().checkPassword(
-      password,
-      user[0].password
-    );
+    const checkPassword = this.checkPassword(password, user[0].password);
 
     if (!checkPassword) {
       return this.fail();
     }
 
     const twoFactorAuthSecret = user[0]['2fa'];
+
     if (twoFactorAuthSecret) {
       const verified = speakeasy.totp.verify({
         secret: twoFactorAuthSecret,
@@ -42,6 +37,7 @@ module.exports = class extends BaseRest {
         token: code,
         window: 2,
       });
+
       if (!verified) {
         return this.fail();
       }
@@ -55,10 +51,12 @@ module.exports = class extends BaseRest {
           link: user[0].url,
         });
     const { avatarProxy } = think.config();
+
     if (avatarProxy) {
       avatarUrl = avatarProxy + '?url=' + encodeURIComponent(avatarUrl);
     }
     user[0].avatar = avatarUrl;
+
     return this.success({
       ...user[0],
       password: null,
