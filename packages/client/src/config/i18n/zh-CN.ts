@@ -1,4 +1,4 @@
-import { generateLocale } from './generate';
+import { generateLocale } from './generate.js';
 
 export default generateLocale([
   '昵称',
@@ -41,4 +41,13 @@ export default generateLocale([
   '传说',
   '表情包',
   '搜索表情包',
+  '个人资料',
+  '通过',
+  '待审核',
+  '垃圾',
+  '取消置顶',
+  '按倒序',
+  '按正序',
+  '按热度',
+  '你认为这篇文章怎么样？',
 ]);

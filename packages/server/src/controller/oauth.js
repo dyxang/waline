@@ -1,14 +1,9 @@
-const qs = require('querystring');
 const jwt = require('jsonwebtoken');
-const { PasswordHash } = require('phpass');
-const request = require('request-promise-native');
+
 module.exports = class extends think.Controller {
   constructor(ctx) {
     super(ctx);
-    this.modelInstance = this.service(
-      `storage/${this.config('storage')}`,
-      'Users'
-    );
+    this.modelInstance = this.getModel('Users');
   }
 
   async indexAction() {
@@ -17,17 +12,19 @@ module.exports = class extends think.Controller {
 
     const hasCode =
       type === 'twitter' ? oauth_token && oauth_verifier : Boolean(code);
+
     if (!hasCode) {
       const { serverURL } = this.ctx;
-      const redirectUrl = `${serverURL}/oauth?${qs.stringify({
+      const redirectUrl = `${serverURL}/api/oauth?${new URLSearchParams({
         redirect,
         type,
-      })}`;
+      }).toString()}`;
+
       return this.redirect(
-        `${oauthUrl}/${type}?${qs.stringify({
+        `${oauthUrl}/${type}?${new URLSearchParams({
           redirect: redirectUrl,
-          state: this.ctx.state.token,
-        })}`
+          state: this.ctx.state.token || '',
+        }).toString()}`,
       );
     }
 
@@ -35,28 +32,32 @@ module.exports = class extends think.Controller {
      * user = { id, name, email, avatar,url };
      */
     const params = { code, oauth_verifier, oauth_token };
+
     if (type === 'facebook') {
       const { serverURL } = this.ctx;
-      const redirectUrl = `${serverURL}/oauth?${qs.stringify({
+      const redirectUrl = `${serverURL}/api/oauth?${new URLSearchParams({
         redirect,
         type,
-      })}`;
-      params.state = qs.stringify({
+      }).toString()}`;
+
+      params.state = new URLSearchParams({
         redirect: redirectUrl,
         state: this.ctx.state.token || '',
       });
     }
 
-    const user = await request({
-      url: `${oauthUrl}/${type}?${qs.stringify(params)}`,
-      method: 'GET',
-      json: true,
-      headers: {
-        'User-Agent': '@waline',
+    const user = await fetch(
+      `${oauthUrl}/${type}?${new URLSearchParams(params).toString()}`,
+      {
+        method: 'GET',
+        headers: {
+          'user-agent': '@waline',
+        },
       },
-    });
-    if (!user || !user.id) {
-      return this.fail();
+    ).then((resp) => resp.json());
+
+    if (!user?.id) {
+      return this.fail(user);
     }
 
     const userBySocial = await this.modelInstance.select({ [type]: user.id });
@@ -66,7 +67,7 @@ module.exports = class extends think.Controller {
 
       if (redirect) {
         return this.redirect(
-          redirect + (redirect.includes('?') ? '&' : '?') + 'token=' + token
+          redirect + (redirect.includes('?') ? '&' : '?') + 'token=' + token,
         );
       }
 
@@ -78,6 +79,7 @@ module.exports = class extends think.Controller {
     }
 
     const current = this.ctx.state.userInfo;
+
     if (!think.isEmpty(current)) {
       const updateData = { [type]: user.id };
 
@@ -93,6 +95,7 @@ module.exports = class extends think.Controller {
     }
 
     const userByEmail = await this.modelInstance.select({ email: user.email });
+
     if (think.isEmpty(userByEmail)) {
       const count = await this.modelInstance.count();
       const data = {
@@ -101,7 +104,7 @@ module.exports = class extends think.Controller {
         url: user.url,
         avatar: user.avatar,
         [type]: user.id,
-        password: new PasswordHash().hashPassword(Math.random()),
+        password: this.hashPassword(Math.random()),
         type: think.isEmpty(count) ? 'administrator' : 'guest',
       };
 
@@ -119,7 +122,7 @@ module.exports = class extends think.Controller {
 
     if (redirect) {
       return this.redirect(
-        redirect + (redirect.includes('?') ? '&' : '?') + 'token=' + token
+        redirect + (redirect.includes('?') ? '&' : '?') + 'token=' + token,
       );
     }
 
